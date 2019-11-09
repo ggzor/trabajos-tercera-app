@@ -17,6 +17,7 @@ const ImagenFondo = styled(ImagenCargando)`
   display:block;
   margin:0 auto;
   animation: floating 5s ease-in-out infinite;
+  width: 80vmin;
 
   @keyframes floating{
     0%{transform:translateY(0px)}
