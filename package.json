@@ -6,12 +6,22 @@
   "dependencies": {
     "@material-ui/core": "^4.6.0",
     "@material-ui/icons": "^4.5.1",
+    "@svgr/parcel-plugin-svgr": "^4.3.3",
+    "images": "^3.0.2",
     "react": "^16.11.0",
     "react-dom": "^16.11.0",
     "react-router-dom": "^5.1.2",
+    "react-spring": "^8.0.27",
+    "st": "^1.2.2",
+    "static": "^2.0.0",
     "styled-components": "^4.4.1"
   },
   "devDependencies": {
-    "parcel-bundler": "^1.12.4"
+    "parcel-bundler": "^1.12.4",
+    "sass": "^1.23.3"
+  },
+  "scripts": {
+      "build": "parcel build static/index.html",
+      "start": "parcel serve static/index.html --host=0.0.0.0"
   }
 }

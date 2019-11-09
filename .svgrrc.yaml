@@ -1,0 +1,46 @@
+svgoConfig:
+  plugins:
+    - addAttributesToSVGElement: false
+    - addClassesToSVGElement: false
+    - cleanupAttrs: false
+    - cleanupEnableBackground: true
+    - cleanupIDs: false
+    - cleanupListOfValues: true
+    - cleanupNumericValues:
+        floatPrecision: 2
+    - collapseGroups: false
+    - convertColors: true
+    - convertPathData: true
+    - convertShapeToPath: true
+    - convertStyleToAttrs: true
+    - convertTransform: true
+    - mergePaths: true
+    - minifyStyles: true
+    - moveElemsAttrsToGroup: true
+    - moveGroupAttrsToElems: true
+    - removeAttrs: false
+    - removeComments: true
+    - removeDesc: true
+    - removeDimensions: true
+    - removeDoctype: true
+    - removeEditorsNSData: true
+    - removeElementsByAttr: true
+    - removeEmptyAttrs: true
+    - removeEmptyContainers: true
+    - removeEmptyText: true
+    - removeHiddenElems: true
+    - removeMetadata: true
+    - removeNonInheritableGroupAttrs: true
+    - removeRasterImages
+    - removeStyleElement: true
+    - removeTitle: true
+    - removeUnknownsAndDefaults: true
+    - removeUnusedNS: true
+    - removeUselessDefs: true
+    - removeUselessStrokeAndFill: true
+    - removeViewBox: true
+    - removeXMLNS: false
+    - removeXMLProcInst: true
+    - sortAttrs: true
+    - transformsWithOnePath: true
+    - prefixIds: false
