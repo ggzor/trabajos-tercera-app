@@ -21,7 +21,7 @@
     "sass": "^1.23.3"
   },
   "scripts": {
-      "build": "parcel build static/index.html",
+      "build": "parcel build static/index.html && cp public/* dist/",
       "start": "parcel serve static/index.html --host=0.0.0.0"
   }
 }
