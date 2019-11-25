@@ -13,6 +13,7 @@ import ColorLens from '@material-ui/icons/ColorLens'
 import DirectionsBus from '@material-ui/icons/DirectionsBus'
 import Done from '@material-ui/icons/Done'
 import Health from './components/icons/Salud'
+import Info from '@material-ui/icons/Info'
 
 import { makeStyles } from '@material-ui/core/styles'
 
@@ -41,6 +42,49 @@ const LinkTo = forwardRef((props, ref) => <RouterLink innerRef={ref} {...props} 
 
 import Cargando from './components/illustrations/Cargando'
 
+
+const datos = {
+  tareas: [
+    { 
+      tipo: 'pastilla', 
+      nombre: 'Omeoprazol', 
+      dosis: '10mg (2 pastillas)',
+      color: 'red',
+      inicio: new Date('2019-11-13T08:30'),
+      frecuencia: { unidad: 'horas', cantidad: 12 } 
+    },
+    {
+      tipo: 'pastilla', 
+      nombre: 'Acetaminofeno', 
+      dosis: '300mg',
+      color: 'blue',
+      inicio: new Date('2019-11-13T09:00'),
+      frecuencia: { unidad: 'horas', cantidad: 6 } 
+    },
+    {
+      tipo: 'consulta',
+      nombre: 'Juan Carlos Baez',
+      foto: 'doctor1',
+      tratamiento: 'Diabetez',
+      fecha: new Date('2019-11-13T10:30')
+    },
+    {
+      tipo: 'consulta',
+      nombre: 'María de la Luz Jimenez',
+      foto: 'doctor2',
+      tratamiento: 'Actividad Física',
+      fecha: new Date('2019-11-13T10:30')
+    },
+    {
+      tipo: 'actividad',
+      nombre: 'Natación',
+      lugar: 'Ciudad Universitaria',
+      dias: [0, 3, 5],
+      hora: [9, 30]
+    }
+  ]
+}
+
 const useStyles = makeStyles({
   root: {
     width: '100vw'
@@ -57,13 +101,13 @@ const BottomNavBar = () => {
     <Box boxShadow={3}>
       <BottomNavigation
         value={index}
-        showLabels
         className={classes.root}
       >
         <BottomNavigationAction label="Inicio"      icon={<Home />}          component={LinkTo} to="/" />
         <BottomNavigationAction label="Salud"       icon={<Health />}        component={LinkTo} to="/salud" />
         <BottomNavigationAction label="Actividades" icon={<ColorLens />}     component={LinkTo} to="/actividades" />
         <BottomNavigationAction label="Transporte"  icon={<DirectionsBus />} component={LinkTo} to="/transporte" />
+        <BottomNavigationAction label="Información" icon={<Info />}          component={LinkTo} to="/info" />
       </BottomNavigation>
     </Box>
   )
@@ -86,6 +130,8 @@ const InicioTop = styled.div`
   padding: 1.5em;
   width: 100vw;
   height: 15vh;
+  min-height: 90px;
+  max-height: 120px;
   background-color: #3f51b5;
   border-radius: 0px 0px 20px 20px;
   box-shadow: rgba(0, 0, 0, 0.2) 0px 2px 4px -1px, rgba(0, 0, 0, 0.14) 0px 4px 5px 0px, rgba(0, 0, 0, 0.12) 0px 1px 10px 0px;
@@ -217,6 +263,18 @@ const Transporte = () => {
     <TransporteLayout>
       <Cargando></Cargando>
     </TransporteLayout>
+  )
+}
+
+const InformacionLayout = styled.div`
+
+`
+
+const Informacion = () => {
+  return (
+    <InformacionLayout>
+
+    </InformacionLayout>
   )
 }
 
