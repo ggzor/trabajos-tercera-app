@@ -24,7 +24,7 @@
     "sass": "^1.23.3"
   },
   "scripts": {
-    "build": "parcel build static/index.html --experimental-scope-hoisting && cp public/* dist/",
+    "build": "parcel build static/index.html && cp public/* dist/",
     "start": "cp public/* dist/ && parcel serve static/index.html --host=0.0.0.0"
   }
 }
