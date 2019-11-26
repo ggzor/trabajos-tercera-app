@@ -9,6 +9,8 @@
     "@svgr/parcel-plugin-svgr": "^4.3.3",
     "date-fns": "^2.8.1",
     "images": "^3.0.2",
+    "lodash": "^4.17.15",
+    "lodash-es": "^4.17.15",
     "react": "^16.11.0",
     "react-dom": "^16.11.0",
     "react-router-dom": "^5.1.2",
@@ -22,7 +24,7 @@
     "sass": "^1.23.3"
   },
   "scripts": {
-    "build": "parcel build static/index.html && cp public/* dist/",
-    "start": "parcel serve static/index.html --host=0.0.0.0"
+    "build": "parcel build static/index.html --experimental-scope-hoisting && cp public/* dist/",
+    "start": "cp public/* dist/ && parcel serve static/index.html --host=0.0.0.0"
   }
 }

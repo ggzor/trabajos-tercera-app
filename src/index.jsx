@@ -1,6 +1,9 @@
-import React, { useState, forwardRef } from 'react'
+import React, { useState, forwardRef, useReducer } from 'react'
 import { render } from 'react-dom'
 import { useSpring, config, animated } from 'react-spring'
+
+import reducirEstado from './model/Reduccion'
+import { determinarEventosHoy } from './model/Store'
 
 import ImagenSaludOriginal from './components/illustrations/Salud.svg'
 
@@ -10,6 +13,7 @@ import { Link as RouterLink, BrowserRouter, useLocation, Switch, Route } from 'r
 
 import Home from '@material-ui/icons/Home'
 import ColorLens from '@material-ui/icons/ColorLens'
+import Car from '@material-ui/icons/DirectionsCar'
 import DirectionsBus from '@material-ui/icons/DirectionsBus'
 import Done from '@material-ui/icons/Done'
 import Health from './components/icons/Salud'
@@ -32,8 +36,6 @@ import ListItemAvatar from '@material-ui/core/ListItemAvatar'
 import Typography from '@material-ui/core/Typography'
 
 import ImagenPerfil from './images/perfil.png'
-import ImagenDoctor1 from './images/doctor1.jpeg'
-import ImagenDoctor2 from './images/doctor2.jpg'
 import PildoraIcon from './components/icons/Pildora'
 import NatacionIcon from './components/icons/Natacion'
 import YogaIcon from './components/icons/Yoga'
@@ -42,52 +44,68 @@ const LinkTo = forwardRef((props, ref) => <RouterLink innerRef={ref} {...props} 
 
 import Cargando from './components/illustrations/Cargando'
 
-
 const datos = {
-  tareas: [
+  paciente: 'Juan López Juárez',
+  pastillas: [
     { 
-      tipo: 'pastilla', 
-      nombre: 'Omeoprazol', 
+      nombre: 'Omeoprazol',
+      color: 'crimson',
       dosis: '10mg (2 pastillas)',
-      color: 'red',
-      inicio: new Date('2019-11-13T08:30'),
-      frecuencia: { unidad: 'horas', cantidad: 12 } 
+      periodo: 8,
+      ultimaAplicacion: '2019-11-25T00:30'
     },
     {
-      tipo: 'pastilla', 
-      nombre: 'Acetaminofeno', 
+      nombre: 'Acetiminofeno',
+      color: 'dodgerblue',
       dosis: '300mg',
-      color: 'blue',
-      inicio: new Date('2019-11-13T09:00'),
-      frecuencia: { unidad: 'horas', cantidad: 6 } 
-    },
+      periodo: 9,
+      ultimaAplicacion: '2019-11-25T00:15' 
+    }
+  ],
+  doctores: [
     {
-      tipo: 'consulta',
-      nombre: 'Juan Carlos Baez',
-      foto: 'doctor1',
-      tratamiento: 'Diabetez',
-      fecha: new Date('2019-11-13T10:30')
-    },
-    {
-      tipo: 'consulta',
       nombre: 'María de la Luz Jimenez',
-      foto: 'doctor2',
-      tratamiento: 'Actividad Física',
-      fecha: new Date('2019-11-13T10:30')
+      especialidad: 'Fisioterapeuta',
+      consultas: [{ fecha: '2019-11-29T09:00', topico: 'Actividad física' }]
     },
     {
-      tipo: 'actividad',
-      nombre: 'Natación',
-      lugar: 'Ciudad Universitaria',
-      dias: [0, 3, 5],
-      hora: [9, 30]
+      nombre: 'Juan Carlos Baez',
+      especialidad: 'Geriatra',
+      consultas: [{ fecha: '2019-11-27T10:30', topico: 'Diabetez' }]
+    }
+  ],
+  actividades: [
+    { 
+      nombre: 'Natación', 
+      horas: ['08:30 a.m.', '09:30 a.m.'], 
+      dias: [1, 2, 3, 5] 
+    },
+    { 
+      nombre: 'Pintura', 
+      horas: ['14:30', '15:30'], 
+      dias: [1, 3, 5] 
+    },
+    { 
+      nombre: 'Yoga', 
+      horas: ['19:30', '20:30'], 
+      dias: [1, 3, 5] 
+    }
+  ],
+  transportes: [
+    { 
+      inicio: 'Priv. Ingeniería Química #1809', 
+      destino: 'Hospital Puebla',
+      vehiculo: 'Versa Blanco',
+      fecha: '2019-11-26T17:00'
     }
   ]
 }
 
+
 const useStyles = makeStyles({
   root: {
-    width: '100vw'
+    width: '100vw',
+    overflow: 'hidden'
   },
 })
 
@@ -95,19 +113,18 @@ const BottomNavBar = () => {
   const classes = useStyles()
 
   const { pathname } = useLocation()
-  const index = ['/', '/salud', '/actividades', '/transporte'].indexOf(pathname)
+  const index = ['/', '/registro', '/informacion'].indexOf(pathname)
 
   return (
     <Box boxShadow={3}>
       <BottomNavigation
         value={index}
         className={classes.root}
+        showLabels
       >
-        <BottomNavigationAction label="Inicio"      icon={<Home />}          component={LinkTo} to="/" />
-        <BottomNavigationAction label="Salud"       icon={<Health />}        component={LinkTo} to="/salud" />
-        <BottomNavigationAction label="Actividades" icon={<ColorLens />}     component={LinkTo} to="/actividades" />
-        <BottomNavigationAction label="Transporte"  icon={<DirectionsBus />} component={LinkTo} to="/transporte" />
-        <BottomNavigationAction label="Información" icon={<Info />}          component={LinkTo} to="/info" />
+        <BottomNavigationAction label="Inicio"      icon={<Home />}   component={LinkTo} to="/" />
+        <BottomNavigationAction label="Registro"    icon={<Health />} component={LinkTo} to="/registro" />
+        <BottomNavigationAction label="Información" icon={<Info />}   component={LinkTo} to="/informacion" />
       </BottomNavigation>
     </Box>
   )
@@ -146,8 +163,9 @@ const useListStyles = makeStyles(theme => ({
   }
 }));
 
-const Inicio = () => {
+const Inicio = ({ estado }) => {
   const classes = useListStyles();
+
   return (
     <InicioLayout>
       <InicioTop>
@@ -159,134 +177,113 @@ const Inicio = () => {
       </InicioTop>
       <div style={{ height: '100%', overflowY: 'auto' }}>
         <List className={classes.root}>
-          <ListSubheader>Pastillas</ListSubheader>
+          { estado.pastillas.length > 0 && (
+              <div>
+                <ListSubheader className={classes.root}>Pastillas</ListSubheader>
+                {estado.pastillas.map(pastilla => (
+                  <ListItem key={pastilla.nombre} button>
+                    <ListItemIcon>
+                        <PildoraIcon style={{ color: pastilla.color }} />
+                    </ListItemIcon>
+                    <ListItemText primary={`${pastilla.nombre} ${pastilla.dosis}`} secondary={pastilla.mensaje} />
+                    <ListItemSecondaryAction>
+                      <IconButton edge="end" aria-label="delete">
+                        <Done />
+                      </IconButton>
+                    </ListItemSecondaryAction>
+                  </ListItem>
+                ))}
+              </div>
+          )}
 
-          <ListItem button>
-            <ListItemIcon>
-                <PildoraIcon style={{ color: 'crimson' }} />
-            </ListItemIcon>
-            <ListItemText primary="Omeoprazol 10mg (2 pastillas)" secondary="08:30 - Con retraso" />
-            <ListItemSecondaryAction>
-              <IconButton edge="end" aria-label="delete">
-                <Done />
-              </IconButton>
-            </ListItemSecondaryAction>
-          </ListItem>
+          { estado.consultas.length > 0 && (
+            <div>
+              <ListSubheader className={classes.root}>Consultas</ListSubheader>
+              {estado.consultas.map(consulta => (
+                <ListItem key={consulta.nombre} button>
+                  <ListItemAvatar>
+                    <Avatar alt={consulta.nombre} src={`${consulta.nombre.split(' ').map(s => s.slice(0, 1)).join('').toLowerCase()}.jpeg`} />
+                  </ListItemAvatar>
+                  <ListItemText primary={`${consulta.topico} - ${consulta.nombre}`} secondary={consulta.mensaje} />
+                </ListItem>
+              ))}
+            </div>
+          )}
 
-          <ListItem button>
-            <ListItemIcon>
-                <PildoraIcon style={{ color: 'dodgerblue' }} />
-            </ListItemIcon>
-            <ListItemText primary="Acetaminofeno 300mg" secondary="09:00 - En 15 minutos" />
-            <ListItemSecondaryAction>
-              <IconButton edge="end" aria-label="delete">
-                <Done />
-              </IconButton>
-            </ListItemSecondaryAction>
-          </ListItem>
+          {estado.actividades.length > 0 && (
+            <div>
+              <ListSubheader className={classes.root}>Actividades</ListSubheader>
+              {estado.actividades.map(actividad => (
+                <ListItem key={actividad.nombre} button>
+                  <ListItemIcon>
+                    { actividad.nombre == 'Natación' ? (<NatacionIcon />)
+                    : actividad.nombre == 'Yoga' ? (<YogaIcon />)
+                    : actividad.nombre == 'Pintura' && (<ColorLens />)
+                    }
+                  </ListItemIcon>
+                  <ListItemText primary={actividad.nombre} secondary={actividad.mensaje} />
+                </ListItem>
+              ))}
+            </div>
+          )}
 
-          <ListSubheader>Consultas</ListSubheader>
-
-          <ListItem button>
-            <ListItemAvatar>
-              <Avatar alt="Doctor Juan Carlos Baez" src={ImagenDoctor1} />
-            </ListItemAvatar>
-            <ListItemText primary="Diabetez - Juan Carlos Baez" secondary="Miércoles a las 10:30" />
-          </ListItem>
-
-          <ListItem button>
-            <ListItemAvatar>
-              <Avatar alt="Doctor Juan Carlos Baez" src={ImagenDoctor2} />
-            </ListItemAvatar>
-            <ListItemText primary="Actividad Física - María de la Luz Jimenez" secondary="Viernes a las 09:00" />
-          </ListItem>
-
-          <ListSubheader>Actividades</ListSubheader>
-          <ListItem button>
-            <ListItemIcon>
-                <NatacionIcon />
-            </ListItemIcon>
-            <ListItemText primary="Natación - Ciudad Universitaria" secondary="De 08:30 a 09:30" />
-          </ListItem>
+          {estado.transportes.length > 0 && (
+            <div>
+              <ListSubheader className={classes.root}>Transportes</ListSubheader>
+              {estado.transportes.map(transporte => (
+                <ListItem key={transporte.vehiculo} button>
+                  <ListItemIcon>
+                      <Car />
+                  </ListItemIcon>
+                  <ListItemText primary={`${transporte.vehiculo}`} secondary={`${transporte.mensaje} - De ${transporte.inicio} a ${transporte.destino}`} />
+                </ListItem>
+              ))}
+            </div>
+          )}
         </List>
-
-        <ListItem button>
-            <ListItemIcon>
-                <ColorLens />
-            </ListItemIcon>
-            <ListItemText primary="Pintura" secondary="De 14:30 a 15:30" />
-        </ListItem>
-
-        <ListItem button>
-            <ListItemIcon>
-                <YogaIcon />
-            </ListItemIcon>
-            <ListItemText primary="Yoga" secondary="De 19:30 a 20:30" />
-        </ListItem>
       </div>
     </InicioLayout>
   )
 }
 
-const ImagenSalud = styled(ImagenSaludOriginal)`
-  width: 10vmax;
-`
+const RegistroLayout = styled.div``
 
-const SaludLayout = styled.div`
-  display: grid;
-  grid-template-columns: 1fr;
-  grid-template-rows: 1fr;
-`
-
-const Salud = () => {
+const Registro = () => {
   return (
-    <SaludLayout>
-      <Cargando></Cargando>
-    </SaludLayout>
-  )
+  <InicioLayout>
+    <InicioTop>
+      <Typography style={{color: 'white'}} component="div">
+        <Box style={{opacity: 0.6}}>Buenos días</Box>
+        <Box fontWeight="fontWeightMedium" fontSize="h6.fontSize">Juan López Juárez</Box>
+      </Typography>
+      <Avatar alt="Perfil" src={ImagenPerfil} style={{ width: 60, height: 60 }}/>
+    </InicioTop>
+  </InicioLayout>)
 }
 
-const ActividadesLayout = SaludLayout
 
-const Actividades = () => {
-  return (
-    <ActividadesLayout>
-      <Cargando></Cargando>
-    </ActividadesLayout>
-  )
-}
-
-const TransporteLayout = SaludLayout
-
-const Transporte = () => {
-  return (
-    <TransporteLayout>
-      <Cargando></Cargando>
-    </TransporteLayout>
-  )
-}
-
-const InformacionLayout = styled.div`
-
-`
+const InformacionLayout = styled.div``
 
 const Informacion = () => {
   return (
-    <InformacionLayout>
+  <InformacionLayout>
 
-    </InformacionLayout>
-  )
+  </InformacionLayout>)
 }
 
 const App = () => {
+  const [{ estado, fecha }, despachar] = useReducer(reducirEstado, {
+    estado: datos, 
+    fecha: Date.now() 
+  })
+
   return (
     <BrowserRouter>
       <AppMainLayout>
         <Switch>
-          <Route exact path="/"            component={Inicio} />
-          <Route path="/salud"       component={Salud} />
-          <Route path="/actividades" component={Actividades} />
-          <Route path="/transporte"  component={Transporte} />
+          <Route exact path="/"      render={() => <Inicio estado={determinarEventosHoy(estado, fecha)}></Inicio>} />
+          <Route path="/registro"    component={() => <Registro {...{ estado, fecha }}></Registro>} />
+          <Route path="/informacion" component={Informacion} />
         </Switch>
         <BottomNavBar />
       </AppMainLayout>
