@@ -4,24 +4,27 @@ import { capitalize, sortBy } from 'lodash'
 
 const obtenerEventoPastilla = (pastilla, fecha) => {
   const ultimaAplicacion = new Date(pastilla.ultimaAplicacion)
-  const siguienteAplicacion = addHours(ultimaAplicacion, pastilla.periodo)
+
+  const siguienteAplicacion = fecha < ultimaAplicacion ? ultimaAplicacion : addHours(ultimaAplicacion, pastilla.periodo)
   
   const relevante = (fecha < siguienteAplicacion && differenceInHours(siguienteAplicacion, fecha) < 2) ||
-                    (siguienteAplicacion < fecha)
+                    (siguienteAplicacion < fecha) ||
+                    (fecha < ultimaAplicacion)
 
   if (relevante)
     return {
       ...pastilla,
-      mensaje: format(siguienteAplicacion, 'kk:mm bbbb') + ' - ' + (fecha < siguienteAplicacion 
+      mensaje: format(siguienteAplicacion, 'kk:mm bbbb', { locale: es }) + ' - ' + (fecha < siguienteAplicacion 
                  ? 'En ' + formatDistance(siguienteAplicacion, fecha, { locale: es })
-                 : 'Con retraso')
+                 : 'Con retraso'),
+      siguiente: siguienteAplicacion
     }
 }
 
 const obtenerConsulta = (doctor, fecha) => {
   return doctor.consultas
            .map(c => ({ ...c, fecha: new Date(c.fecha) }))
-           .filter(({ fecha: f }) => fecha < f && differenceInDays(f, fecha) < 5)
+           .filter(({ fecha: f }) => fecha < f)
            .map(({ fecha: f, topico }) => ({ 
              ...doctor, 
              topico,
@@ -54,9 +57,9 @@ const obtenerTransportes = (transporte, fecha) => {
 }
 
 export const determinarEventosHoy = (datos, fecha) => ({
-  pastillas: datos.pastillas
+  pastillas: sortBy(datos.pastillas
                .map(p => obtenerEventoPastilla(p, fecha))
-               .filter(p => p !== undefined),
+               .filter(p => p !== undefined), 'siguiente'),
   consultas: sortBy(datos.doctores
                .flatMap(d => obtenerConsulta(d, fecha))
                .filter(c => c !== undefined), 'fecha'),

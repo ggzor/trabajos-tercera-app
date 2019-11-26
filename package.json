@@ -11,6 +11,8 @@
     "images": "^3.0.2",
     "lodash": "^4.17.15",
     "lodash-es": "^4.17.15",
+    "rambda": "^4.2.0",
+    "ramda": "^0.26.1",
     "react": "^16.11.0",
     "react-dom": "^16.11.0",
     "react-router-dom": "^5.1.2",

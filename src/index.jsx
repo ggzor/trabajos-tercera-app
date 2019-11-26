@@ -1,4 +1,4 @@
-import React, { useState, forwardRef, useReducer } from 'react'
+import React, { useState, forwardRef, useReducer, useEffect } from 'react'
 import { render } from 'react-dom'
 import { useSpring, config, animated } from 'react-spring'
 
@@ -18,6 +18,8 @@ import DirectionsBus from '@material-ui/icons/DirectionsBus'
 import Done from '@material-ui/icons/Done'
 import Health from './components/icons/Salud'
 import Info from '@material-ui/icons/Info'
+import Delete from '@material-ui/icons/Delete'
+import Add from '@material-ui/icons/Add'
 
 import { makeStyles } from '@material-ui/core/styles'
 
@@ -34,6 +36,15 @@ import ListItemSecondaryAction from '@material-ui/core/ListItemSecondaryAction'
 import IconButton from '@material-ui/core/IconButton'
 import ListItemAvatar from '@material-ui/core/ListItemAvatar'
 import Typography from '@material-ui/core/Typography'
+import Dialog from '@material-ui/core/Dialog'
+import DialogContent from '@material-ui/core/DialogContent'
+import DialogContentText from '@material-ui/core/DialogContentText'
+import DialogActions from '@material-ui/core/DialogActions'
+import DialogTitle from '@material-ui/core/DialogTitle'
+import Button from '@material-ui/core/Button'
+import Fab from '@material-ui/core/Fab'
+import TextField from '@material-ui/core/TextField'
+import Slider from '@material-ui/core/Slider'
 
 import ImagenPerfil from './images/perfil.png'
 import PildoraIcon from './components/icons/Pildora'
@@ -43,6 +54,9 @@ import YogaIcon from './components/icons/Yoga'
 const LinkTo = forwardRef((props, ref) => <RouterLink innerRef={ref} {...props} />)
 
 import Cargando from './components/illustrations/Cargando'
+import { formatDistance, format } from 'date-fns'
+import { es } from 'date-fns/locale'
+import { sample } from 'lodash-es'
 
 const datos = {
   paciente: 'Juan López Juárez',
@@ -187,7 +201,7 @@ const Inicio = ({ estado, despachar }) => {
                     </ListItemIcon>
                     <ListItemText primary={`${pastilla.nombre} ${pastilla.dosis}`} secondary={pastilla.mensaje} />
                     <ListItemSecondaryAction>
-                      <IconButton edge="end" aria-label="delete" onClick={despachar({ type: '' })}>
+                      <IconButton edge="end" aria-label="delete" onClick={() => despachar({ type: 'MARK_PILL_TAKEN', nombre: pastilla.nombre })}>
                         <Done />
                       </IconButton>
                     </ListItemSecondaryAction>
@@ -246,18 +260,195 @@ const Inicio = ({ estado, despachar }) => {
   )
 }
 
-const RegistroLayout = styled.div``
+const useFabStyles = makeStyles(theme => ({
+  fab: {
+    position: 'absolute',
+    bottom: theme.spacing(2),
+    right: theme.spacing(2),
+  }
+}));
 
-const Registro = () => {
+
+const Registro = ({ estado, fecha, despachar }) => {
+  const classes = useListStyles()
+  const fabStyles = useFabStyles()
+  
+  const [pastillaABorrar, setPastillaABorrar] = useState('')
+  const [dialogoBorrarPastillaAbierto, setDialogoBorrarPastillaAbierto] = useState(false);
+  const [dialogoAccionAbierto, setDialogoAccionAbierto] = useState(false)
+  const [dialogoPastillaAbierto, setDialogoPastillaAbierto] = useState(false)
+
+  const nuevaPastillaInicial = { nombre: '', dosis: '', periodo: 3, ultimaAplicacion: format(new Date(), "yyyy-MM-dd'T'HH:mm", { locale: es }) }
+  const [nuevaPastilla, setNuevaPastilla] = useState(nuevaPastillaInicial)
+
+  const manejarCierrePastilla = borrar => () => {
+    setDialogoBorrarPastillaAbierto(false)
+    if (borrar)
+      despachar({ type: 'DELETE_PILL', nombre: pastillaABorrar })
+  };
+
+  const manejarCierreDialogoPastilla = completado => () => {
+    setDialogoPastillaAbierto(false)
+
+    if (completado) {
+      if (nuevaPastilla.nombre.length > 0 && nuevaPastilla.dosis.length > 0)
+        despachar({ type: 'ADD_PILL', pastilla: { ...nuevaPastilla, color: sample(['crimsom', 'tomato', '#BC54C7', '#75C754']) } })
+    }
+  }
+
+  const manejarCierreAccion = tipo => () => {
+    setDialogoAccionAbierto(false)
+
+    switch(tipo) {
+      case 'Pastilla':
+        setNuevaPastilla(nuevaPastillaInicial)
+        setDialogoPastillaAbierto(true)
+        break
+    }
+  }
+
   return (
   <InicioLayout>
     <InicioTop>
       <Typography style={{color: 'white'}} component="div">
-        <Box style={{opacity: 0.6}}>Buenos días</Box>
+        <Box style={{opacity: 0.6}}>Actividades</Box>
         <Box fontWeight="fontWeightMedium" fontSize="h6.fontSize">Juan López Juárez</Box>
       </Typography>
       <Avatar alt="Perfil" src={ImagenPerfil} style={{ width: 60, height: 60 }}/>
     </InicioTop>
+    <div style={{ height: '100%', overflowY: 'auto' }}>
+      <List className={classes.root}>
+        { estado.pastillas.length > 0 && (
+              <div>
+                <ListSubheader className={classes.root}>Todas las pastillas</ListSubheader>
+                {estado.pastillas.map(pastilla => (
+                  <ListItem key={pastilla.nombre} button>
+                    <ListItemIcon>
+                        <PildoraIcon style={{ color: pastilla.color }} />
+                    </ListItemIcon>
+                    <ListItemText primary={`${pastilla.nombre} ${pastilla.dosis}`} 
+                                  secondary={`Cada ${pastilla.periodo} horas ${ new Date(pastilla.ultimaAplicacion) < fecha ? ` - Última toma ${formatDistance(new Date(pastilla.ultimaAplicacion), fecha, { addSuffix: true, locale: es })}`: ''  }`} />
+                    <ListItemSecondaryAction>
+                      <IconButton edge="end" aria-label="delete" onClick={() => { 
+                        setPastillaABorrar(pastilla.nombre)
+                        setDialogoBorrarPastillaAbierto(true);
+                       }}>
+                        <Delete />
+                      </IconButton>
+                    </ListItemSecondaryAction>
+                  </ListItem>
+                ))}
+              </div>
+        )}
+      </List>
+      <Fab aria-label="Agregar" className={fabStyles.fab} color="primary" onClick={() => {
+        setDialogoAccionAbierto(true)
+      }} >
+        <Add />
+      </Fab>
+
+       <Dialog open={dialogoPastillaAbierto} onClose={manejarCierreDialogoPastilla(false)} aria-labelledby="form-dialog-title">
+        <DialogTitle id="form-dialog-title">Agregar pastilla</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Información sobre el medicamento
+          </DialogContentText>
+          <TextField
+            autoFocus
+            margin="dense"
+            id="nombre"
+            label="Nombre"
+            type="text"
+            fullWidth
+            value={nuevaPastilla.nombre}
+            onChange={e => setNuevaPastilla({ ...nuevaPastilla, nombre: e.target.value })}
+          />
+          <TextField
+            margin="dense"
+            id="dosis"
+            label="Dosis"
+            type="text"
+            fullWidth
+            value={nuevaPastilla.dosis}
+            onChange={e => setNuevaPastilla({ ...nuevaPastilla, dosis: e.target.value })}
+          />
+          <Typography id="discrete-slider" gutterBottom>
+            Frecuencia (horas)
+          </Typography>
+          <Slider
+            defaultValue={8}
+            valueLabelDisplay="auto"
+            step={1}
+            marks
+            min={1}
+            max={12}
+            value={nuevaPastilla.periodo}
+            onChange={(e, val) => setNuevaPastilla({ ...nuevaPastilla, periodo: val })}
+          />
+          <TextField
+            id="date"
+            margin="dense"
+            label="Fecha"
+            type="datetime-local"
+            className={classes.textField}
+            InputLabelProps={{
+              shrink: true,
+            }}
+            fullWidth
+            defaultValue={nuevaPastilla.ultimaAplicacion}
+            onChange={e => setNuevaPastilla({ ...nuevaPastilla, ultimaAplicacion: e.target.value })}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={manejarCierreDialogoPastilla(false)} color="primary">
+            Cancelar
+          </Button>
+          <Button onClick={manejarCierreDialogoPastilla(true)} color="primary">
+            Agregar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog onClose={manejarCierreAccion(null)} aria-labelledby="simple-dialog-title" open={dialogoAccionAbierto}
+              fullWidth>
+        <DialogTitle id="simple-dialog-title">Agregar...</DialogTitle>
+        <List>
+          {['Pastilla', 'Actividad', 'Transporte'].map(a => (
+            <ListItem key={a} autoFocus button onClick={manejarCierreAccion(a)}>
+              <ListItemIcon>
+                { a == 'Pastilla' ? <PildoraIcon />
+                : a == 'Actividad' ? <ColorLens />
+                : a == 'Transporte' && <DirectionsBus />
+                }
+              </ListItemIcon>
+              <ListItemText primary={a} />
+            </ListItem>
+          ))}
+        </List>
+      </Dialog>
+
+      <Dialog
+        open={dialogoBorrarPastillaAbierto}
+        onClose={manejarCierrePastilla(false)}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">{"¿Estás seguro que deseas borrar la pastilla?"}</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            Esto borrará todos los registros de esta pastilla.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={manejarCierrePastilla(false)} color="primary">
+            Cancelar
+          </Button>
+          <Button onClick={manejarCierrePastilla(true)} color="primary" autoFocus>
+            Borrar
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </div>
   </InicioLayout>)
 }
 
@@ -272,17 +463,25 @@ const Informacion = () => {
 }
 
 const App = () => {
+  
+  const estadoInicial = JSON.parse(localStorage.getItem('estado')) || datos
+
   const [{ estado, fecha }, despachar] = useReducer(reducirEstado, {
-    estado: datos, 
+    estado: estadoInicial, 
     fecha: Date.now() 
   })
+
+  useEffect(() => {
+    if (estado !== undefined)
+      localStorage.setItem('estado', JSON.stringify(estado))
+  }, [estado])
 
   return (
     <BrowserRouter>
       <AppMainLayout>
         <Switch>
           <Route exact path="/"      render={() => <Inicio estado={determinarEventosHoy(estado, fecha)} despachar={despachar}></Inicio>} />
-          <Route path="/registro"    component={() => <Registro {...{ estado, fecha }}></Registro>} />
+          <Route path="/registro"    component={() => <Registro {...{ estado, fecha, despachar }}></Registro>} />
           <Route path="/informacion" component={Informacion} />
         </Switch>
         <BottomNavBar />
