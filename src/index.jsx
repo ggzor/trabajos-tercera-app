@@ -2,7 +2,7 @@ import React, { useState, forwardRef, useReducer } from 'react'
 import { render } from 'react-dom'
 import { useSpring, config, animated } from 'react-spring'
 
-import reducirEstado from './model/Reduccion'
+import { reducirEstado } from './model/Reduccion'
 import { determinarEventosHoy } from './model/Store'
 
 import ImagenSaludOriginal from './components/illustrations/Salud.svg'
@@ -163,7 +163,7 @@ const useListStyles = makeStyles(theme => ({
   }
 }));
 
-const Inicio = ({ estado }) => {
+const Inicio = ({ estado, despachar }) => {
   const classes = useListStyles();
 
   return (
@@ -187,7 +187,7 @@ const Inicio = ({ estado }) => {
                     </ListItemIcon>
                     <ListItemText primary={`${pastilla.nombre} ${pastilla.dosis}`} secondary={pastilla.mensaje} />
                     <ListItemSecondaryAction>
-                      <IconButton edge="end" aria-label="delete">
+                      <IconButton edge="end" aria-label="delete" onClick={despachar({ type: '' })}>
                         <Done />
                       </IconButton>
                     </ListItemSecondaryAction>
@@ -281,7 +281,7 @@ const App = () => {
     <BrowserRouter>
       <AppMainLayout>
         <Switch>
-          <Route exact path="/"      render={() => <Inicio estado={determinarEventosHoy(estado, fecha)}></Inicio>} />
+          <Route exact path="/"      render={() => <Inicio estado={determinarEventosHoy(estado, fecha)} despachar={despachar}></Inicio>} />
           <Route path="/registro"    component={() => <Registro {...{ estado, fecha }}></Registro>} />
           <Route path="/informacion" component={Informacion} />
         </Switch>
