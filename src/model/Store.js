@@ -45,8 +45,8 @@ const obtenerActividades = (actividad, fecha) => {
 
 const obtenerTransportes = (transporte, fecha) => {
   const fechaTransporte = new Date(transporte.fecha)
-  const relevante = (fecha < fechaTransporte && differenceInDays(fechaTransporte, fecha) <= 2) ||
-                    (fechaTransporte < fecha && differenceInHours(fecha, fechaTransporte) <= 4)
+  const relevante = (fecha < fechaTransporte && differenceInDays(fechaTransporte, fecha) < 2) ||
+                    (fechaTransporte < fecha && differenceInDays(fecha, fechaTransporte) < 2)
 
   if (relevante) {
     return {

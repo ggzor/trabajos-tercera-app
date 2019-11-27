@@ -20,6 +20,8 @@ import Health from './components/icons/Salud'
 import Info from '@material-ui/icons/Info'
 import Delete from '@material-ui/icons/Delete'
 import Add from '@material-ui/icons/Add'
+import Close from '@material-ui/icons/Close'
+import MyLocation from '@material-ui/icons/MyLocation'
 
 import { makeStyles } from '@material-ui/core/styles'
 
@@ -45,6 +47,12 @@ import Button from '@material-ui/core/Button'
 import Fab from '@material-ui/core/Fab'
 import TextField from '@material-ui/core/TextField'
 import Slider from '@material-ui/core/Slider'
+import RegistroIcon from '@material-ui/icons/AssignmentTurnedIn'
+import FormControl from '@material-ui/core/FormControl'
+import FormControlLabel from '@material-ui/core/FormControlLabel'
+import FormGroup from '@material-ui/core/FormGroup'
+import FormLabel from '@material-ui/core/FormLabel'
+import Checkbox from '@material-ui/core/Checkbox'
 
 import ImagenPerfil from './images/perfil.png'
 import PildoraIcon from './components/icons/Pildora'
@@ -54,9 +62,9 @@ import YogaIcon from './components/icons/Yoga'
 const LinkTo = forwardRef((props, ref) => <RouterLink innerRef={ref} {...props} />)
 
 import Cargando from './components/illustrations/Cargando'
-import { formatDistance, format } from 'date-fns'
+import { formatDistance, format, addHours } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { sample } from 'lodash-es'
+import { sample, intersection, union, difference } from 'lodash-es'
 
 const datos = {
   paciente: 'Juan López Juárez',
@@ -66,14 +74,14 @@ const datos = {
       color: 'crimson',
       dosis: '10mg (2 pastillas)',
       periodo: 8,
-      ultimaAplicacion: '2019-11-25T00:30'
+      ultimaAplicacion: '2019-11-27T00:30'
     },
     {
       nombre: 'Acetiminofeno',
       color: 'dodgerblue',
       dosis: '300mg',
       periodo: 9,
-      ultimaAplicacion: '2019-11-25T00:15' 
+      ultimaAplicacion: '2019-11-27T00:15' 
     }
   ],
   doctores: [
@@ -102,7 +110,7 @@ const datos = {
     { 
       nombre: 'Yoga', 
       horas: ['19:30', '20:30'], 
-      dias: [1, 3, 5] 
+      dias: [1, 3, 5]
     }
   ],
   transportes: [
@@ -110,7 +118,7 @@ const datos = {
       inicio: 'Priv. Ingeniería Química #1809', 
       destino: 'Hospital Puebla',
       vehiculo: 'Versa Blanco',
-      fecha: '2019-11-26T17:00'
+      fecha: '2019-11-27T17:00'
     }
   ]
 }
@@ -137,8 +145,7 @@ const BottomNavBar = () => {
         showLabels
       >
         <BottomNavigationAction label="Inicio"      icon={<Home />}   component={LinkTo} to="/" />
-        <BottomNavigationAction label="Registro"    icon={<Health />} component={LinkTo} to="/registro" />
-        <BottomNavigationAction label="Información" icon={<Info />}   component={LinkTo} to="/informacion" />
+        <BottomNavigationAction label="Registro"    icon={<RegistroIcon />} component={LinkTo} to="/registro" />
       </BottomNavigation>
     </Box>
   )
@@ -180,6 +187,21 @@ const useListStyles = makeStyles(theme => ({
 const Inicio = ({ estado, despachar }) => {
   const classes = useListStyles();
 
+  const [dialogoBorrarAbierto, setDialogoBorrarAbierto] = useState(false)
+  const [entidadBorrar, setEntidadBorrar] = useState(null)
+
+  const manejarCierreBorrar = completado => () => {
+    setDialogoBorrarAbierto(false)
+
+    if (entidadBorrar !== null && completado) {
+      if (entidadBorrar && entidadBorrar.topico) {
+        despachar({ type: 'DELETE_EVENT', consulta: entidadBorrar })
+      } else {
+        despachar({ type: 'DELETE_TRANS', transporte: entidadBorrar })
+      }
+    }
+  }
+
   return (
     <InicioLayout>
       <InicioTop>
@@ -214,11 +236,19 @@ const Inicio = ({ estado, despachar }) => {
             <div>
               <ListSubheader className={classes.root}>Consultas</ListSubheader>
               {estado.consultas.map(consulta => (
-                <ListItem key={consulta.nombre} button>
+                <ListItem key={consulta.nombre + consulta.topico} button>
                   <ListItemAvatar>
                     <Avatar alt={consulta.nombre} src={`${consulta.nombre.split(' ').map(s => s.slice(0, 1)).join('').toLowerCase()}.jpeg`} />
                   </ListItemAvatar>
                   <ListItemText primary={`${consulta.topico} - ${consulta.nombre}`} secondary={consulta.mensaje} />
+                  <ListItemSecondaryAction>
+                    <IconButton edge="end" aria-label="delete" onClick={() => {
+                      setEntidadBorrar(consulta)
+                      setDialogoBorrarAbierto(true)
+                    }}>
+                      <Close />
+                    </IconButton>
+                  </ListItemSecondaryAction>
                 </ListItem>
               ))}
             </div>
@@ -232,7 +262,8 @@ const Inicio = ({ estado, despachar }) => {
                   <ListItemIcon>
                     { actividad.nombre == 'Natación' ? (<NatacionIcon />)
                     : actividad.nombre == 'Yoga' ? (<YogaIcon />)
-                    : actividad.nombre == 'Pintura' && (<ColorLens />)
+                    : actividad.nombre == 'Pintura' ? (<ColorLens />)
+                    : (<MyLocation></MyLocation>)
                     }
                   </ListItemIcon>
                   <ListItemText primary={actividad.nombre} secondary={actividad.mensaje} />
@@ -240,7 +271,6 @@ const Inicio = ({ estado, despachar }) => {
               ))}
             </div>
           )}
-
           {estado.transportes.length > 0 && (
             <div>
               <ListSubheader className={classes.root}>Transportes</ListSubheader>
@@ -250,11 +280,40 @@ const Inicio = ({ estado, despachar }) => {
                       <Car />
                   </ListItemIcon>
                   <ListItemText primary={`${transporte.vehiculo}`} secondary={`${transporte.mensaje} - De ${transporte.inicio} a ${transporte.destino}`} />
+                  <ListItemSecondaryAction>
+                    <IconButton edge="end" aria-label="delete" onClick={() => {
+                      setEntidadBorrar(transporte)
+                      setDialogoBorrarAbierto(true)
+                    }}>
+                      <Close />
+                    </IconButton>
+                  </ListItemSecondaryAction>
                 </ListItem>
               ))}
             </div>
           )}
         </List>
+        <Dialog
+          open={dialogoBorrarAbierto}
+          onClose={manejarCierreBorrar(false)}
+          aria-labelledby="alert-dialog-title"
+          aria-describedby="alert-dialog-description"
+        >
+          <DialogTitle id="alert-dialog-title">{`¿Estás seguro que deseas cancelar ${entidadBorrar && entidadBorrar.topico ? 'la consulta' : 'el transporte'}?`}</DialogTitle>
+          <DialogContent>
+            <DialogContentText id="alert-dialog-description">
+              Esta acción no se puede revertir.
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={manejarCierreBorrar(false)} color="primary">
+              Volver
+            </Button>
+            <Button onClick={manejarCierreBorrar(true)} color="primary" autoFocus>
+              Confirmar
+            </Button>
+          </DialogActions>
+        </Dialog>
       </div>
     </InicioLayout>
   )
@@ -262,29 +321,64 @@ const Inicio = ({ estado, despachar }) => {
 
 const useFabStyles = makeStyles(theme => ({
   fab: {
-    position: 'absolute',
-    bottom: theme.spacing(2),
+    position: 'fixed',
+    'z-index': '10',
+    bottom: theme.spacing(8),
     right: theme.spacing(2),
   }
 }));
 
+const useFormStyles = makeStyles(theme => ({
+  root: {
+    display: 'flex',
+  },
+  formControl: {
+    margin: theme.spacing(3),
+  },
+}));
 
 const Registro = ({ estado, fecha, despachar }) => {
   const classes = useListStyles()
   const fabStyles = useFabStyles()
+  const formClasses = useFormStyles()
   
   const [pastillaABorrar, setPastillaABorrar] = useState('')
+  const [actividadABorrar, setActividadABorrar] = useState(null)
   const [dialogoBorrarPastillaAbierto, setDialogoBorrarPastillaAbierto] = useState(false);
   const [dialogoAccionAbierto, setDialogoAccionAbierto] = useState(false)
   const [dialogoPastillaAbierto, setDialogoPastillaAbierto] = useState(false)
+  const [dialogoTransporteAbierto, setDialogoTransporteAbierto] = useState(false)
+  const [dialogoActividadAbierto, setDialogoActividadAbierto] = useState(false)
+  const [dialogoConsultaAbierto, setDialogoConsultaAbierto] = useState(false)
+  const [dialogoBorrarActividad, setDialogoBorrarActividad] = useState(false)
 
   const nuevaPastillaInicial = { nombre: '', dosis: '', periodo: 3, ultimaAplicacion: format(new Date(), "yyyy-MM-dd'T'HH:mm", { locale: es }) }
   const [nuevaPastilla, setNuevaPastilla] = useState(nuevaPastillaInicial)
+
+  const nuevoTransporteInicial = { inicio: '', destino: '', vehiculo: '', fecha: format(new Date(), "yyyy-MM-dd'T'HH:mm", { locale: es }) }
+  const [nuevoTransporte, setNuevoTransporte] = useState(nuevoTransporteInicial)
+
+  const nuevaActividadInicial = { 
+    nombre: '', 
+    horas: [format(new Date(), "HH:mm", { locale: es }), format(addHours(new Date(), 1), "HH:mm", { locale: es })],
+    dias: []
+  }
+  const [nuevaActividad, setNuevaActividad] = useState(nuevaActividadInicial)
+
+  const nuevaConsultaInicial = { topico: '' , fecha: format(new Date(), "yyyy-MM-dd'T'HH:mm", { locale: es }) }
+  const [doctorSeleccionado, setDoctorSeleccionado] = useState(null)
+  const [nuevaConsulta, setNuevaConsulta] = useState(nuevaConsultaInicial)
 
   const manejarCierrePastilla = borrar => () => {
     setDialogoBorrarPastillaAbierto(false)
     if (borrar)
       despachar({ type: 'DELETE_PILL', nombre: pastillaABorrar })
+  }
+
+  const manejarCierreBorrarActividad = borrar => () => {
+    setDialogoBorrarActividad(false)
+    if (borrar)
+      despachar({ type: 'DELETE_ACTIVITY', nombre: actividadABorrar })
   };
 
   const manejarCierreDialogoPastilla = completado => () => {
@@ -296,6 +390,33 @@ const Registro = ({ estado, fecha, despachar }) => {
     }
   }
 
+  const manejarCierreDialogoTransporte = completado => () => {
+    setDialogoTransporteAbierto(false)
+
+    if (completado) {
+      if (nuevoTransporte.inicio.length > 0 && nuevoTransporte.destino.length > 0 && nuevoTransporte.vehiculo.length > 0) 
+        despachar({ type: 'ADD_TRANS', transporte: { ...nuevoTransporte } })
+    }
+  }
+
+  const manejarCierreDialogoActividad = completado => () => {
+    setDialogoActividadAbierto(false)
+
+    if (completado) {
+      if (nuevaActividad.nombre.length > 0 && new Date('2017-05-31T' + nuevaActividad.horas[0]) < new Date('2017-05-31T' + nuevaActividad.horas[1])) 
+        despachar({ type: 'ADD_ACTIVITY', actividad: { ...nuevaActividad, dias: [...new Set(nuevaActividad.dias)] } })
+    }
+  }
+
+  const manejarCierreDialogoConsulta = completado => () => {
+    setDialogoConsultaAbierto(false)
+
+    if (completado) {
+      if (nuevaConsulta.topico.length > 0 && new Date() < new Date(nuevaConsulta.fecha)) 
+        despachar({ type: 'ADD_EVENT', consulta: { ...nuevaConsulta, doctor: doctorSeleccionado } })
+    }
+  }
+
   const manejarCierreAccion = tipo => () => {
     setDialogoAccionAbierto(false)
 
@@ -303,6 +424,14 @@ const Registro = ({ estado, fecha, despachar }) => {
       case 'Pastilla':
         setNuevaPastilla(nuevaPastillaInicial)
         setDialogoPastillaAbierto(true)
+        break
+      case 'Transporte':
+        setNuevoTransporte(nuevoTransporteInicial)
+        setDialogoTransporteAbierto(true)
+        break
+      case 'Actividad':
+        setNuevaActividad(nuevaActividad)
+        setDialogoActividadAbierto(true)
         break
     }
   }
@@ -340,6 +469,56 @@ const Registro = ({ estado, fecha, despachar }) => {
                 ))}
               </div>
         )}
+        { estado.doctores.length > 0 && (
+            <div>
+              <ListSubheader className={classes.root}>Todos los doctores</ListSubheader>
+              {estado.doctores.map(doctor => (
+                <ListItem key={doctor.nombre} button>
+                  <ListItemAvatar>
+                    <Avatar alt={doctor.nombre} src={`${doctor.nombre.split(' ').map(s => s.slice(0, 1)).join('').toLowerCase()}.jpeg`} />
+                  </ListItemAvatar>
+                  <ListItemText primary={`${doctor.nombre}`} secondary={`${doctor.especialidad}`} />
+                  <ListItemSecondaryAction>
+                    <IconButton edge="end" aria-label="add" onClick={() => {
+                      setNuevaConsulta(nuevaConsultaInicial)
+                      setDoctorSeleccionado(doctor)
+                      setDialogoConsultaAbierto(true)
+                    }}>
+                      <Add />
+                    </IconButton>
+                  </ListItemSecondaryAction>
+                </ListItem>
+              ))}
+            </div>
+          )}
+
+        {estado.actividades.length > 0 && (
+          <div>
+            <ListSubheader className={classes.root}>Actividades</ListSubheader>
+            {estado.actividades.map(actividad => (
+              <ListItem key={actividad.nombre} button>
+                <ListItemIcon>
+                  { actividad.nombre == 'Natación' ? (<NatacionIcon />)
+                  : actividad.nombre == 'Yoga' ? (<YogaIcon />)
+                  : actividad.nombre == 'Pintura' ? (<ColorLens />)
+                  : (<MyLocation></MyLocation>)
+                  }
+                </ListItemIcon>
+                <ListItemText primary={actividad.nombre} 
+                              secondary={`${["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"].filter((_, i) => actividad.dias.indexOf(i) !== -1).join(', ')} de ${actividad.horas[0]} a ${actividad.horas[1]}`} />
+                <ListItemSecondaryAction>
+                  <IconButton aria-label="delete" onClick={() => { 
+                    setActividadABorrar(actividad.nombre)
+                    setDialogoBorrarActividad(true);
+                    }}>
+                    <Delete />
+                  </IconButton>
+                </ListItemSecondaryAction>
+              </ListItem>
+            ))}
+          </div>
+        )}
+        <div style={{ height: '64px' }}></div>
       </List>
       <Fab aria-label="Agregar" className={fabStyles.fab} color="primary" onClick={() => {
         setDialogoAccionAbierto(true)
@@ -409,6 +588,133 @@ const Registro = ({ estado, fecha, despachar }) => {
         </DialogActions>
       </Dialog>
 
+      <Dialog open={dialogoTransporteAbierto} onClose={manejarCierreDialogoTransporte(false)} aria-labelledby="form-dialog-title">
+        <DialogTitle id="form-dialog-title">Agregar Transporte</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Información sobre el transporte
+          </DialogContentText>
+          <TextField
+            autoFocus
+            margin="dense"
+            id="nombre"
+            label="Inicio"
+            type="text"
+            fullWidth
+            value={nuevoTransporte.inicio}
+            onChange={e => setNuevoTransporte({ ...nuevoTransporte, inicio: e.target.value })}
+          />
+          <TextField
+            margin="dense"
+            id="nombre"
+            label="Destino"
+            type="text"
+            fullWidth
+            value={nuevoTransporte.destino}
+            onChange={e => setNuevoTransporte({ ...nuevoTransporte, destino: e.target.value })}
+          />
+          <TextField
+            margin="dense"
+            id="nombre"
+            label="Vehículo"
+            type="text"
+            fullWidth
+            value={nuevoTransporte.vehiculo}
+            onChange={e => setNuevoTransporte({ ...nuevoTransporte, vehiculo: e.target.value })}
+          />
+          <TextField
+            id="date"
+            margin="dense"
+            label="Fecha"
+            type="datetime-local"
+            className={classes.textField}
+            InputLabelProps={{
+              shrink: true,
+            }}
+            fullWidth
+            defaultValue={nuevoTransporte.fecha}
+            onChange={e => setNuevoTransporte({ ...nuevoTransporte, fecha: e.target.value })}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={manejarCierreDialogoTransporte(false)} color="primary">
+            Cancelar
+          </Button>
+          <Button onClick={manejarCierreDialogoTransporte(true)} color="primary">
+            Agregar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={dialogoActividadAbierto} onClose={manejarCierreDialogoActividad(false)} aria-labelledby="form-dialog-title">
+        <DialogTitle id="form-dialog-title">Agregar Actividad</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Información sobre la actividad
+          </DialogContentText>
+          <TextField
+            autoFocus
+            margin="dense"
+            id="nombre"
+            label="Nombre"
+            type="text"
+            fullWidth
+            value={nuevaActividad.nombre}
+            onChange={e => setNuevaActividad({ ...nuevaActividad, nombre: e.target.value })}
+          />
+          <TextField
+            id="date"
+            margin="dense"
+            label="Inicio"
+            type="time"
+            className={classes.textField}
+            InputLabelProps={{
+              shrink: true,
+            }}
+            fullWidth
+            defaultValue={nuevaActividad.horas[0]}
+            onChange={e => setNuevaActividad({ ...nuevaActividad, horas: [e.target.value, nuevaActividad.horas[1]] })}
+          />
+          <TextField
+            id="date"
+            margin="dense"
+            label="Fin"
+            type="time"
+            className={classes.textField}
+            InputLabelProps={{
+              shrink: true,
+            }}
+            fullWidth
+            defaultValue={nuevaActividad.horas[1]}
+            onChange={e => setNuevaActividad({ ...nuevaActividad, horas: [nuevaActividad.horas[0], nuevaActividad.horas[1]] })}
+          />
+          <FormControl component="fieldset" className={formClasses.formControl}>
+            <FormLabel component="legend">Días</FormLabel>
+            <FormGroup>
+              {["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"].map((d, i) => (
+                <FormControlLabel key={d}
+                  control={<Checkbox checked={nuevaActividad.dias.indexOf(i + 1) !== -1} onChange={e => {
+                    if (e.target.checked)
+                      setNuevaActividad({ ...nuevaActividad, dias: union(nuevaActividad.dias, [i + 1]) })
+                    else
+                      setNuevaActividad({ ...nuevaActividad, dias: difference(nuevaActividad.dias, [i + 1]) })
+                  }} value={false} />}
+                  label={d}
+                />                
+              ))}
+            </FormGroup>
+          </FormControl>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={manejarCierreDialogoActividad(false)} color="primary">
+            Cancelar
+          </Button>
+          <Button onClick={manejarCierreDialogoActividad(true)} color="primary">
+            Agregar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Dialog onClose={manejarCierreAccion(null)} aria-labelledby="simple-dialog-title" open={dialogoAccionAbierto}
               fullWidth>
         <DialogTitle id="simple-dialog-title">Agregar...</DialogTitle>
@@ -425,6 +731,47 @@ const Registro = ({ estado, fecha, despachar }) => {
             </ListItem>
           ))}
         </List>
+      </Dialog>
+
+
+      <Dialog open={dialogoConsultaAbierto} onClose={manejarCierreDialogoConsulta(false)} aria-labelledby="form-dialog-title">
+        <DialogTitle id="form-dialog-title">Agregar Consulta</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Consulta con {doctorSeleccionado && doctorSeleccionado.nombre}
+          </DialogContentText>
+          <TextField
+            autoFocus
+            margin="dense"
+            id="nombre"
+            label="Tópico"
+            type="text"
+            fullWidth
+            value={nuevaConsulta.topico}
+            onChange={e => setNuevaConsulta({ ...nuevaConsulta, topico: e.target.value })}
+          />
+          <TextField
+            id="date"
+            margin="dense"
+            label="Fecha"
+            type="datetime-local"
+            className={classes.textField}
+            InputLabelProps={{
+              shrink: true,
+            }}
+            fullWidth
+            defaultValue={nuevaConsulta.fecha}
+            onChange={e => setNuevaConsulta({ ...nuevaConsulta, fecha: e.target.value })}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={manejarCierreDialogoConsulta(false)} color="primary">
+            Cancelar
+          </Button>
+          <Button onClick={manejarCierreDialogoConsulta(true)} color="primary">
+            Agregar
+          </Button>
+        </DialogActions>
       </Dialog>
 
       <Dialog
@@ -444,6 +791,28 @@ const Registro = ({ estado, fecha, despachar }) => {
             Cancelar
           </Button>
           <Button onClick={manejarCierrePastilla(true)} color="primary" autoFocus>
+            Borrar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={dialogoBorrarActividad}
+        onClose={manejarCierreBorrarActividad(false)}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">{`¿Estás seguro que deseas borrar la actividad ${actividadABorrar}?`}</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            Esto borrará todos los registros de esta actividad.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={manejarCierreBorrarActividad(false)} color="primary">
+            Cancelar
+          </Button>
+          <Button onClick={manejarCierreBorrarActividad(true)} color="primary" autoFocus>
             Borrar
           </Button>
         </DialogActions>
