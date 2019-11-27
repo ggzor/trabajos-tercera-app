@@ -167,7 +167,7 @@ const InicioLayout = styled.div`
 const InicioTop = styled.div`
   padding: 1.5em;
   width: 100vw;
-  height: 15vh;
+  height: 20vh;
   min-height: 90px;
   max-height: 120px;
   background-color: #3f51b5;
@@ -208,6 +208,7 @@ const Inicio = ({ estado, despachar }) => {
         <Typography style={{color: 'white'}} component="div">
           <Box style={{opacity: 0.6}}>Buenos días</Box>
           <Box fontWeight="fontWeightMedium" fontSize="h6.fontSize">Juan López Juárez</Box>
+          <Box style={{opacity: 0.9}}>Usuario: Carlos López Hernández</Box>
         </Typography>
         <Avatar alt="Perfil" src={ImagenPerfil} style={{ width: 60, height: 60 }}/>
       </InicioTop>
@@ -442,6 +443,7 @@ const Registro = ({ estado, fecha, despachar }) => {
       <Typography style={{color: 'white'}} component="div">
         <Box style={{opacity: 0.6}}>Actividades</Box>
         <Box fontWeight="fontWeightMedium" fontSize="h6.fontSize">Juan López Juárez</Box>
+          <Box style={{opacity: 0.9}}>Usuario: Carlos López Hernández</Box>
       </Typography>
       <Avatar alt="Perfil" src={ImagenPerfil} style={{ width: 60, height: 60 }}/>
     </InicioTop>
