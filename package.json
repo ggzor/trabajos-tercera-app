@@ -9,7 +9,7 @@
     "@svgr/parcel-plugin-svgr": "^4.3.3",
     "date-fns": "^2.8.1",
     "images": "^3.0.2",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.21",
     "lodash-es": "^4.17.15",
     "rambda": "^4.2.0",
     "ramda": "^0.26.1",
